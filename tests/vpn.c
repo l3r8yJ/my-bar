@@ -1,11 +1,34 @@
 #include "../src/modules.h"
 
 /*
- * @todo #7:60min Improve testing infrastructure and quality checks for this
- * memory-constrained bar. Evaluate a lightweight C test framework and coverage
- * tooling, migrate a representative test, and integrate both with just and CI.
- * Fail CI on test failures and agreed coverage regressions while preserving
- * warning-fatal builds, static analysis, and sanitizer checks.
+ * @todo #9:60min Add coverage control for production C code exercised by tests.
+ * Generate line and branch coverage through just and CI, publish the report,
+ * and establish a documented baseline with explicit exclusions. Make CI fail
+ * below agreed thresholds and demonstrate the gate with a failing fixture.
+ */
+
+/*
+ * @todo #9:60min Select an appropriate testing technique for this native C bar.
+ * Compare the existing assert-based tests with lightweight C test frameworks
+ * and choose where unit, integration, and end-to-end tests provide value.
+ * Apply the chosen approach to one representative behavior, expose it through
+ * just and CI, and document the decision without adding runtime dependencies.
+ */
+
+/*
+ * @todo #9:60min Add quality control for the test codebase itself. Evaluate
+ * test-specific checks for meaningful assertions, deterministic execution,
+ * isolation, and reliable resource cleanup beyond the existing strict compiler,
+ * formatter, analyzers, and sanitizers. Integrate the selected checks with just
+ * and CI, fix findings, and prove that a representative violation fails CI.
+ */
+
+/*
+ * @todo #9:60min Introduce mutation testing for a bounded production C module.
+ * Evaluate compatible tooling and run representative mutations through the
+ * behavioral tests. Report killed, surviving, and timed-out mutants separately,
+ * document equivalent-mutant exclusions, and strengthen tests for real survivors.
+ * Add a just command and a bounded CI job with an agreed mutation-score gate.
  */
 #include <assert.h>
 #include <errno.h>
