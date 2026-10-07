@@ -6,7 +6,7 @@ install:
   - >-
     apt-get install -y --no-install-recommends
     ca-certificates git gcc libc6-dev pkg-config clang clang-tidy clang-format
-    libclang-rt-dev just jq libx11-dev libnm-dev libjson-c-dev
+    libclang-rt-dev just jq libx11-dev libnm-dev libsystemd-dev libjson-c-dev dbus
 merge:
   script:
     - just check
