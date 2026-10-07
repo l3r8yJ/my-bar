@@ -15,13 +15,14 @@ git clone https://github.com/l3r8yJ/my-bar.git
 cd my-bar
 ```
 
-Requires a C compiler, `pkg-config`, `just`, X11, libnm, json-c and i3status.
-Checks additionally use `jq`, GCC, Clang, clang-tidy and clang-format.
+Requires a C compiler, `pkg-config`, `just`, X11, libsystemd, json-c and i3status.
+Checks additionally use `jq`, GCC, Clang, clang-tidy, clang-format and `dbus-run-session`.
 On Arch the development headers ship with `libx11`,
-`libnm` and `json-c`.
+`systemd-libs` and `json-c`. Install `dbus` for the isolated VPN tests.
 
 ```sh
 just build                  # build/my-bar
+just clean                  # remove generated build files
 just check                  # formatting, lint, both analyzers, tests, sanitizers
 just format                 # automatically format all C sources and headers
 just run                    # stream i3bar JSON
@@ -47,8 +48,10 @@ map, displaying English as EN, Russian as RU, and other layouts by name. The roo
 window's `_XKB_RULES_NAMES` property can be stale and is deliberately not used.
 It requires the desktop's DISPLAY
 and XAUTHORITY environment; without an X display it shows `?`.
-`vpn.c` uses libnm and reports VPN, WireGuard and tun connections; missing
-NetworkManager reports `unavailable`. `metrics.c` reads `/proc/meminfo` and
+`vpn.c` reads NetworkManager's D-Bus properties through libsystemd's sd-bus API,
+without libnm/GLib or background threads. It polls active VPN, WireGuard and tun
+connections each refresh; each D-Bus method call has a 100 ms timeout. Missing
+NetworkManager or failed property reads report `unavailable`. `metrics.c` reads `/proc/meminfo` and
 `statvfs("/")`; missing values show `?`.
 
 The program owns and terminates its i3status child. It exits on malformed status
@@ -61,6 +64,18 @@ Every enabled compiler warning is an error (`-Werror`) in release builds, tests,
 static analysis and sanitizer builds. clang-tidy uses `WarningsAsErrors: '*'`;
 format drift fails `clang-format --dry-run --Werror`. `just install` requires the
 entire check suite to pass. There are no sanitizer suppressions.
+
+`goto` is forbidden by `lint/no-goto.h`, force-included by every build and lint
+command. GCC and Clang reject the token even in macros; comments and strings are
+unaffected. `just lint` verifies this policy with rejected C fixtures.
+
+Recoverable failures are returned as values. `src/error/result.h` defines
+`StringResult` and `MUST_USE`. Its `error` field is negative on failure and zero on
+success; `value` is an optional caller-owned string that the caller frees. This
+represents `Result<Option<String>, Error>` without Rust ownership enforcement.
+The VPN lookup returns this shared type, while its NetworkManager logic stays in
+`vpn.c`. Early returns replace cleanup jumps; ignoring a `MUST_USE` result fails
+the warning-fatal build.
 
 | Recipe | Tool and purpose |
 | --- | --- |
@@ -75,8 +90,8 @@ so a separate scan-build pass would duplicate that analysis. GCC supplies a seco
 independent analysis. Sanitized executables stay in `build/`; installation uses the
 optimized executable without sanitizer runtime overhead.
 
-Two targeted lint exceptions are documented in the source/config: glibc lacks
-Annex K's optional `_s` APIs, and the X11 test double must retain X11's parameter
+Targeted lint exceptions are documented in the source/config: glibc lacks
+Annex K's optional `_s` APIs, and X11/sd-bus callbacks must retain their ABI parameter
 order. Diagnostic output and fixed-size display formatting explicitly discard
 return values where no recovery is needed; data parsing and stream failures are
 checked. Passing these checks does not prove that every possible execution is
