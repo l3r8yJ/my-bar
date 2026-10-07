@@ -49,14 +49,17 @@ Run `my-bar --once` to inspect one status frame.
 Install the build and check tools on Arch:
 
 ```sh
-sudo pacman -S --needed base-devel git just jq libx11 systemd-libs json-c dbus i3status curl xz
+sudo pacman -S --needed base-devel git just ldc dub dfmt dscanner jq libx11 systemd-libs json-c dbus i3status
 git clone https://github.com/l3r8yJ/my-bar.git
 cd my-bar
+just setup
 just build
 just install
 ```
 
-The build downloads pinned LDC, DUB, dfmt and DScanner tools into `.tools/`.
+Tools must be installed on `PATH`. `just setup` lists missing development
+dependencies; no recipe downloads or installs tools. Tested versions: LDC 1.43.0,
+DUB 1.42.0, dfmt/D-Scanner 0.15.2.
 `just` wraps DUB; the executable uses D's BetterC mode without a garbage collector.
 
 `just build` produces `build/my-bar`. `just install` installs it to
