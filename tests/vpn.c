@@ -1,4 +1,12 @@
 #include "../src/modules.h"
+
+/*
+ * @todo #7:60min Improve testing infrastructure and quality checks for this
+ * memory-constrained bar. Evaluate a lightweight C test framework and coverage
+ * tooling, migrate a representative test, and integrate both with just and CI.
+ * Fail CI on test failures and agreed coverage regressions while preserving
+ * warning-fatal builds, static analysis, and sanitizer checks.
+ */
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>

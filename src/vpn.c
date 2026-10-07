@@ -20,33 +20,31 @@ void vpn_init(void)
         bus = sd_bus_unref(bus);
 }
 
-static int append_connection(const char *path, FILE *text, int separator)
+// Returns a negative error, or zero with an optional caller-owned name.
+__attribute__((warn_unused_result)) static int connection_name(const char *path, char **name)
 {
-    char *type = NULL, *name = NULL;
-    uint32_t state = 0;
+    *name = NULL;
+    char *type = NULL;
     int result =
         sd_bus_get_property_string(bus, service, path, active_interface, "Type", NULL, &type);
-    if (result >= 0 && strcmp(type, "vpn") != 0 && strcmp(type, "wireguard") != 0 &&
-        strcmp(type, "tun") != 0) {
-        result = 0;
-        goto done;
-    }
-    if (result >= 0)
-        result = sd_bus_get_property_trivial(bus, service, path, active_interface, "State", NULL,
-                                             'u', &state);
-    if (result >= 0 && state != CONNECTION_ACTIVATED) {
-        result = 0;
-        goto done;
-    }
-    if (result >= 0)
-        result =
-            sd_bus_get_property_string(bus, service, path, active_interface, "Id", NULL, &name);
-    if (result >= 0)
-        result = fprintf(text, "%s%s", separator ? ", " : "", name) < 0 ? -EIO : 1;
-done:
-    free(name);
+    if (result < 0)
+        return result;
+    int is_vpn =
+        strcmp(type, "vpn") == 0 || strcmp(type, "wireguard") == 0 || strcmp(type, "tun") == 0;
     free(type);
-    return result;
+    if (!is_vpn)
+        return 0;
+
+    uint32_t state = 0;
+    result = sd_bus_get_property_trivial(bus, service, path, active_interface, "State", NULL, 'u',
+                                         &state);
+    if (result < 0)
+        return result;
+    if (state != CONNECTION_ACTIVATED)
+        return 0;
+
+    result = sd_bus_get_property_string(bus, service, path, active_interface, "Id", NULL, name);
+    return result < 0 ? result : 0;
 }
 
 json_object *vpn_block(void)
@@ -66,10 +64,15 @@ json_object *vpn_block(void)
         if (result > 0) {
             const char *path = NULL;
             while ((result = sd_bus_message_read(connections, "o", &path)) > 0) {
-                result = append_connection(path, stream, active);
+                char *name = NULL;
+                result = connection_name(path, &name);
+                if (result >= 0 && name) {
+                    result = fprintf(stream, "%s%s", active ? ", " : "", name) < 0 ? -EIO : 0;
+                    ++active;
+                }
+                free(name);
                 if (result < 0)
                     break;
-                active += result;
             }
         }
         if (result >= 0 && !active && fputs("off", stream) < 0)

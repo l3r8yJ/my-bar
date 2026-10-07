@@ -65,6 +65,15 @@ static analysis and sanitizer builds. clang-tidy uses `WarningsAsErrors: '*'`;
 format drift fails `clang-format --dry-run --Werror`. `just install` requires the
 entire check suite to pass. There are no sanitizer suppressions.
 
+`goto` is forbidden by `src/no_goto.h`, force-included by every build and lint
+command. GCC and Clang reject the token even in macros; comments and strings are
+unaffected. `just lint` verifies this policy with rejected C fixtures.
+
+Recoverable failures are returned as values. For example, `connection_name`
+returns a negative error code or zero with an optional caller-owned string:
+the C equivalent of `Result<Option<String>, Error>`. Early returns replace cleanup
+jumps, and `warn_unused_result` requires callers to use its result.
+
 | Recipe | Tool and purpose |
 | --- | --- |
 | `just format` / `just format-check` | [clang-format](https://clang.llvm.org/docs/ClangFormat.html): automatic formatting and verification |

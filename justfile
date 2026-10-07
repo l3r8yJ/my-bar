@@ -1,4 +1,4 @@
-flags := "-std=c17 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
+flags := "-std=c17 -include src/no_goto.h -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
 packages := "x11 libsystemd json-c"
 
 default: check
@@ -26,6 +26,7 @@ format-check:
     clang-format --dry-run --Werror src/*.c src/*.h tests/*.c
 
 lint:
+    sh tests/lint-policy.sh
     clang-tidy src/*.c tests/*.c -- {{flags}} $(pkg-config --cflags {{packages}})
 
 analyze:
