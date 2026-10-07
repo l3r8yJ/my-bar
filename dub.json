@@ -104,5 +104,8 @@
   ],
   "buildOptions": [
     "betterC"
+  ],
+  "preGenerateCommands-posix": [
+    "pkg-config --exists --print-errors 'json-c >= 0.19'"
   ]
 }
