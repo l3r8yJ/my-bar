@@ -1,3 +1,4 @@
+#include "error/result.h"
 #include "modules.h"
 #include <errno.h>
 #include <stdint.h>
@@ -20,31 +21,30 @@ void vpn_init(void)
         bus = sd_bus_unref(bus);
 }
 
-// Returns a negative error, or zero with an optional caller-owned name.
-__attribute__((warn_unused_result)) static int connection_name(const char *path, char **name)
+MUST_USE static StringResult connection_name(const char *path)
 {
-    *name = NULL;
+    char *name = NULL;
     char *type = NULL;
     int result =
         sd_bus_get_property_string(bus, service, path, active_interface, "Type", NULL, &type);
     if (result < 0)
-        return result;
+        return (StringResult){.error = result};
     int is_vpn =
         strcmp(type, "vpn") == 0 || strcmp(type, "wireguard") == 0 || strcmp(type, "tun") == 0;
     free(type);
     if (!is_vpn)
-        return 0;
+        return (StringResult){0};
 
     uint32_t state = 0;
     result = sd_bus_get_property_trivial(bus, service, path, active_interface, "State", NULL, 'u',
                                          &state);
     if (result < 0)
-        return result;
+        return (StringResult){.error = result};
     if (state != CONNECTION_ACTIVATED)
-        return 0;
+        return (StringResult){0};
 
-    result = sd_bus_get_property_string(bus, service, path, active_interface, "Id", NULL, name);
-    return result < 0 ? result : 0;
+    result = sd_bus_get_property_string(bus, service, path, active_interface, "Id", NULL, &name);
+    return (StringResult){.error = result < 0 ? result : 0, .value = name};
 }
 
 json_object *vpn_block(void)
@@ -64,13 +64,13 @@ json_object *vpn_block(void)
         if (result > 0) {
             const char *path = NULL;
             while ((result = sd_bus_message_read(connections, "o", &path)) > 0) {
-                char *name = NULL;
-                result = connection_name(path, &name);
-                if (result >= 0 && name) {
-                    result = fprintf(stream, "%s%s", active ? ", " : "", name) < 0 ? -EIO : 0;
+                StringResult name = connection_name(path);
+                result = name.error;
+                if (result >= 0 && name.value) {
+                    result = fprintf(stream, "%s%s", active ? ", " : "", name.value) < 0 ? -EIO : 0;
                     ++active;
                 }
-                free(name);
+                free(name.value);
                 if (result < 0)
                     break;
             }

@@ -20,10 +20,10 @@ test: build
     sh tests/check.sh
 
 format:
-    clang-format -i src/*.c src/*.h tests/*.c
+    clang-format -i src/*.c src/*.h src/error/*.h tests/*.c
 
 format-check:
-    clang-format --dry-run --Werror src/*.c src/*.h tests/*.c
+    clang-format --dry-run --Werror src/*.c src/*.h src/error/*.h tests/*.c
 
 lint:
     sh tests/lint-policy.sh

@@ -69,10 +69,13 @@ entire check suite to pass. There are no sanitizer suppressions.
 command. GCC and Clang reject the token even in macros; comments and strings are
 unaffected. `just lint` verifies this policy with rejected C fixtures.
 
-Recoverable failures are returned as values. For example, `connection_name`
-returns a negative error code or zero with an optional caller-owned string:
-the C equivalent of `Result<Option<String>, Error>`. Early returns replace cleanup
-jumps, and `warn_unused_result` requires callers to use its result.
+Recoverable failures are returned as values. `src/error/result.h` defines
+`StringResult` and `MUST_USE`. Its `error` field is negative on failure and zero on
+success; `value` is an optional caller-owned string that the caller frees. This
+represents `Result<Option<String>, Error>` without Rust ownership enforcement.
+The VPN lookup returns this shared type, while its NetworkManager logic stays in
+`vpn.c`. Early returns replace cleanup jumps; ignoring a `MUST_USE` result fails
+the warning-fatal build.
 
 | Recipe | Tool and purpose |
 | --- | --- |
