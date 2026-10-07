@@ -26,7 +26,7 @@ jobs:
         task: [build, format-check, lint, analyze, test, sanitize]
     steps:
       - name: Install native toolchain
-        run: pacman -Syu --noconfirm --needed git clang just jq libx11 libnm json-c
+        run: pacman -Syu --noconfirm --needed git clang just jq libx11 systemd-libs json-c dbus
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

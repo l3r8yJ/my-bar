@@ -15,10 +15,10 @@ git clone https://github.com/l3r8yJ/my-bar.git
 cd my-bar
 ```
 
-Requires a C compiler, `pkg-config`, `just`, X11, libnm, json-c and i3status.
-Checks additionally use `jq`, GCC, Clang, clang-tidy and clang-format.
+Requires a C compiler, `pkg-config`, `just`, X11, libsystemd, json-c and i3status.
+Checks additionally use `jq`, GCC, Clang, clang-tidy, clang-format and `dbus-run-session`.
 On Arch the development headers ship with `libx11`,
-`libnm` and `json-c`.
+`systemd-libs` and `json-c`. Install `dbus` for the isolated VPN tests.
 
 ```sh
 just build                  # build/my-bar
@@ -48,8 +48,10 @@ map, displaying English as EN, Russian as RU, and other layouts by name. The roo
 window's `_XKB_RULES_NAMES` property can be stale and is deliberately not used.
 It requires the desktop's DISPLAY
 and XAUTHORITY environment; without an X display it shows `?`.
-`vpn.c` uses libnm and reports VPN, WireGuard and tun connections; missing
-NetworkManager reports `unavailable`. `metrics.c` reads `/proc/meminfo` and
+`vpn.c` reads NetworkManager's D-Bus properties through libsystemd's sd-bus API,
+without libnm/GLib or background threads. It polls active VPN, WireGuard and tun
+connections each refresh; each D-Bus method call has a 100 ms timeout. Missing
+NetworkManager or failed property reads report `unavailable`. `metrics.c` reads `/proc/meminfo` and
 `statvfs("/")`; missing values show `?`.
 
 The program owns and terminates its i3status child. It exits on malformed status
@@ -76,8 +78,8 @@ so a separate scan-build pass would duplicate that analysis. GCC supplies a seco
 independent analysis. Sanitized executables stay in `build/`; installation uses the
 optimized executable without sanitizer runtime overhead.
 
-Two targeted lint exceptions are documented in the source/config: glibc lacks
-Annex K's optional `_s` APIs, and the X11 test double must retain X11's parameter
+Targeted lint exceptions are documented in the source/config: glibc lacks
+Annex K's optional `_s` APIs, and X11/sd-bus callbacks must retain their ABI parameter
 order. Diagnostic output and fixed-size display formatting explicitly discard
 return values where no recovery is needed; data parsing and stream failures are
 checked. Passing these checks does not prove that every possible execution is
