@@ -16,3 +16,12 @@ merge:
       git archive HEAD |
       ssh -F ../worker-ssh-config -E ../worker-ssh.log rultor-worker
       'docker run --rm -i my-bar-build:local sh -ec "mkdir /work; cd /work; tar -xf -; just check"'
+release:
+  script:
+    - sh scripts/validate-version.sh "$tag"
+    - chmod 600 ../worker-ssh-key ../worker-ssh-config
+    - set -o pipefail
+    - >-
+      git archive HEAD |
+      ssh -F ../worker-ssh-config -E ../worker-ssh.log rultor-worker
+      'docker run --rm -i my-bar-build:local sh -ec "mkdir /work; cd /work; tar -xf -; just check"'
