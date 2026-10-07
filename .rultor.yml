@@ -1,0 +1,8 @@
+docker:
+  image: archlinux:base-devel
+  as_root: true
+install:
+  - pacman -Syu --noconfirm --needed git clang just jq libx11 libnm json-c
+merge:
+  script:
+    - just check

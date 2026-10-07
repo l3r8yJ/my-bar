@@ -1,6 +1,7 @@
 # my-bar
 
 [![CI](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml)
+[![PDD status](https://www.0pdd.com/svg?name=l3r8yJ/my-bar)](https://www.0pdd.com/p?name=l3r8yJ/my-bar)
 
 Native C status producer for i3bar. Keyboard layout, active NetworkManager VPNs,
 SSD usage and RAM usage live in separate modules. The executable starts the native
@@ -81,3 +82,21 @@ return values where no recovery is needed; data parsing and stream failures are
 checked. Passing these checks does not prove that every possible execution is
 free of leaks. LeakSanitizer needs a normal process environment; it can fail under
 ptrace-based sandboxes. Do not disable leak detection to bypass that failure.
+
+## Repository bots
+
+[Rultor](https://doc.rultor.com/basics.html) runs `just check` in the same Arch
+Linux environment before merging. A repository collaborator can request a merge
+by commenting `@rultor merge` on a pull request. `.rultor.yml` defines the build;
+it does not configure deployment or releases.
+
+[0pdd](https://github.com/yegor256/0pdd#how-to-start) scans TODO puzzles in `src/`
+and `tests/` on pushes to `master`, creates issues labelled `pdd`, and closes them
+when the puzzles are removed. `.0pdd.yml` limits each scan to ten new issues;
+`.pdd` defines the source paths. Both bots need repository collaborator access,
+and 0pdd needs a push webhook to `https://www.0pdd.com/hook/github` with JSON
+content. Its configuration becomes active once these files are merged to `master`.
+
+To record real follow-up work in C, use a comment such as
+`/* @todo #42:30min Describe the concrete remaining work here. */`, replacing 42
+with the related issue number. No placeholder puzzles are included in the code.
