@@ -12,13 +12,32 @@ case "$1 $2" in
     'release view')
         case "$GH_SCENARIO" in
             new) exit 1 ;;
-            published) echo false ;;
-            *) echo true ;;
-        esac ;;
+            published) echo published ;;
+            empty_prerelease|empty_upload_failure) echo empty-prerelease ;;
+            *) echo draft ;;
+        esac
+        ;;
     'release create')
-        case " $* " in *' --draft '*) ;; *) exit 1 ;; esac ;;
-    'release upload') test "$GH_SCENARIO" != upload_failure ;;
-    'release edit') test "$GH_SCENARIO" != upload_failure ;;
+        case " $* " in *' --draft '*) ;; *) exit 1 ;; esac
+        ;;
+    'release upload')
+        case "$GH_SCENARIO" in upload_failure|empty_upload_failure) exit 1 ;; esac
+        ;;
+    'release edit')
+        case " $* " in
+            *' --draft=true '*)
+                case "$GH_SCENARIO" in
+                    empty_prerelease|empty_upload_failure) ;;
+                    *) exit 1 ;;
+                esac
+                ;;
+            *' --draft=false '*)
+                case "$GH_SCENARIO" in upload_failure|empty_upload_failure) exit 1 ;; esac
+                case " $* " in *' --prerelease=false '*) ;; *) exit 1 ;; esac
+                ;;
+            *) exit 1 ;;
+        esac
+        ;;
     *) exit 1 ;;
 esac
 GH
@@ -30,13 +49,13 @@ printf 'recipe fixture\n' > "$work/dist/PKGBUILD"
 printf 'metadata fixture\n' > "$work/dist/.SRCINFO"
 cd "$work/dist"
 sha256sum package.tar.gz package.pkg.tar.zst PKGBUILD .SRCINFO > SHA256SUMS
-for GH_SCENARIO in new draft published upload_failure; do
+for GH_SCENARIO in new draft published upload_failure empty_prerelease empty_upload_failure; do
     export GH_SCENARIO
     : > "$GH_TEST_LOG"
     if sh "$script" v0.1.0 >/dev/null 2>&1; then
-        test "$GH_SCENARIO" != upload_failure
+        case "$GH_SCENARIO" in upload_failure|empty_upload_failure) exit 1 ;; esac
     else
-        test "$GH_SCENARIO" = upload_failure
+        case "$GH_SCENARIO" in upload_failure|empty_upload_failure) ;; *) exit 1 ;; esac
     fi
     case "$GH_SCENARIO" in
         new) expected='release view
@@ -48,14 +67,21 @@ release edit' ;;
         published) expected='release view' ;;
         upload_failure) expected='release view
 release upload' ;;
+        empty_prerelease) expected='release view
+release edit
+release upload
+release edit' ;;
+        empty_upload_failure) expected='release view
+release edit
+release upload' ;;
     esac
     test "$(cat "$GH_TEST_LOG")" = "$expected"
 done
 printf 'tampered\n' >> package.tar.gz
 : > "$GH_TEST_LOG"
 if sh "$script" v0.1.0 >/dev/null 2>&1; then
-    echo 'FAIL: publishing accepted a checksum mismatch' >&2
+    echo 'FAIL: publishing accepted checksum mismatch' >&2
     exit 1
 fi
 test ! -s "$GH_TEST_LOG"
-echo 'PASS: new release, draft retry, immutable publication, failed upload, and checksum rejection'
+echo 'PASS: release creation, empty prerelease recovery, draft retry, immutable assets, upload failure, checksum rejection'
