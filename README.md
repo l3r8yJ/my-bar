@@ -3,7 +3,7 @@
 [![CI](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml)
 [![PDD status](https://www.0pdd.com/svg?name=l3r8yJ/my-bar)](https://www.0pdd.com/p?name=l3r8yJ/my-bar)
 
-A small native C status bar for i3: keyboard layout, NetworkManager VPNs, disk
+A small native D status bar for i3: keyboard layout, NetworkManager VPNs, disk
 and RAM usage, plus Wi-Fi, volume and the clock from i3status.
 
 ## Install
@@ -49,15 +49,18 @@ Run `my-bar --once` to inspect one status frame.
 Install the build and check tools on Arch:
 
 ```sh
-sudo pacman -S --needed base-devel git clang just jq libx11 systemd-libs json-c dbus i3status
+sudo pacman -S --needed base-devel git just jq libx11 systemd-libs json-c dbus i3status curl xz
 git clone https://github.com/l3r8yJ/my-bar.git
 cd my-bar
 just build
 just install
 ```
 
-`just build` produces `build/my-bar`. `just install` runs all checks and installs
-it to `~/.local/bin/my-bar`.
+The build downloads pinned LDC, DUB, dfmt and DScanner tools into `.tools/`.
+`just` wraps DUB; the executable uses D's BetterC mode without a garbage collector.
 
-Use `just check` to run formatting, lint, static analysis, tests and sanitizers;
+`just build` produces `build/my-bar`. `just install` installs it to
+`~/.local/bin/my-bar`.
+
+Use `just check` to run formatting, compiler checks, tests and sanitizers;
 `just format` to format the code; and `just clean` to remove build files.

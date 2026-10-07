@@ -1,4 +1,0 @@
-# glibc does not implement Annex K's *_s functions; keep the real bounds checks.
-Checks: '-*,clang-analyzer-*,bugprone-*,cert-*,performance-*,portability-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
-WarningsAsErrors: '*'
-HeaderFilterRegex: 'src/.*'

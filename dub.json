@@ -1,0 +1,111 @@
+{
+  "name": "my-bar",
+  "description": "Native i3 status bar with keyboard, VPN, disk and memory status",
+  "authors": [
+    "l3r8yJ"
+  ],
+  "license": "MIT",
+  "targetPath": "build",
+  "sourcePaths": [],
+  "importPaths": [
+    "src"
+  ],
+  "dflags-ldc": [
+    "-mcpu=x86-64",
+    "-relocation-model=pic"
+  ],
+  "lflags-posix": [
+    "--as-needed",
+    "-zrelro",
+    "-znow"
+  ],
+  "configurations": [
+    {
+      "name": "application",
+      "targetType": "executable",
+      "targetName": "my-bar",
+      "sourcePaths": [
+        "src"
+      ],
+      "mainSourceFile": "src/main.d",
+      "libs": [
+        "X11",
+        "libsystemd",
+        "json-c"
+      ]
+    },
+    {
+      "name": "unittest",
+      "targetType": "executable",
+      "targetName": "test-all",
+      "sourcePaths": [
+        "src/bar"
+      ],
+      "mainSourceFile": "tests/runner.d",
+      "libs": [
+        "X11",
+        "libsystemd",
+        "json-c"
+      ]
+    },
+    {
+      "name": "keyboard-fixture",
+      "targetType": "dynamicLibrary",
+      "targetName": "xkb-fixture",
+      "sourceFiles": [
+        "tests/keyboard/fixture.d",
+        "src/bar/bindings/xkb.d"
+      ]
+    },
+    {
+      "name": "vpn-fixture",
+      "targetType": "executable",
+      "targetName": "vpn-service",
+      "mainSourceFile": "tests/vpn-service/main.d",
+      "libs": [
+        "libsystemd"
+      ]
+    }
+  ],
+  "buildTypes": {
+    "release": {
+      "buildOptions": [
+        "optimize",
+        "inline"
+      ],
+      "dflags-ldc": [
+        "-O2"
+      ]
+    },
+    "sanitize": {
+      "buildOptions": [
+        "debugMode",
+        "debugInfo"
+      ],
+      "dflags-ldc": [
+        "-fsanitize=address"
+      ]
+    },
+    "unittest-sanitize": {
+      "buildOptions": [
+        "unittests",
+        "debugMode",
+        "debugInfo"
+      ],
+      "dflags-ldc": [
+        "-fsanitize=address"
+      ]
+    }
+  },
+  "buildRequirements": [
+    "disallowDeprecations",
+    "requireBoundsCheck",
+    "requireContracts"
+  ],
+  "buildOptions": [
+    "betterC"
+  ],
+  "preGenerateCommands-posix": [
+    "pkg-config --exists --print-errors 'json-c >= 0.19'"
+  ]
+}

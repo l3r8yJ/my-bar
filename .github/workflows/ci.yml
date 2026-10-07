@@ -23,10 +23,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [build, format-check, lint, analyze, test, sanitize]
+        task: [build, format-check, lint, test, sanitize]
     steps:
       - name: Install native toolchain
-        run: pacman -Syu --noconfirm --needed git clang just jq libx11 systemd-libs json-c dbus
+        run: pacman -Syu --noconfirm --needed git just jq libx11 systemd-libs json-c dbus curl shellcheck make xz
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,9 +34,12 @@ jobs:
       - name: Record toolchain versions
         run: |
           cc --version
-          clang --version
-          clang-tidy --version
-          clang-format --version
+          just setup
+          .tools/ldc/bin/ldc2 --version
+          .tools/ldc/bin/dub --version
+          .tools/dfmt --version
+          .tools/dscanner --version
+          cat .tools/version
           just --version
       - name: Run ${{ matrix.task }}
         run: just ${{ matrix.task }}
