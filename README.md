@@ -132,8 +132,10 @@ merged into master:
 
 Use `vMAJOR.MINOR.PATCH` without leading zeroes. Rultor validates the version,
 runs the checks on the local worker, and pushes the tag only on success.
-The separate **Release** workflow builds the tagged source in an Arch Linux
-x86-64 container. It runs all checks, strips a copy of the executable, builds
+The **Package checks** workflow validates pull requests and manual runs. The
+tag-only **Release** workflow calls the same checks for the tagged source before
+publishing. Packaging uses an Arch Linux x86-64 container, runs all checks,
+strips a copy of the executable, builds
 an Arch package as an unprivileged user, and rejects namcap warnings and errors.
 The sole namcap exception is `dependency-not-needed i3status`: the program
 launches i3status at runtime, which ELF dependency analysis cannot detect.

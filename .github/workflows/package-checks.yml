@@ -1,0 +1,67 @@
+name: Package checks
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: v0.0.0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-checks-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: ${{ inputs.version || 'v0.0.0' }}
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate version
+        run: sh scripts/validate-version.sh "$RELEASE_VERSION"
+      - name: Build release environment
+        run: |
+          docker build --file release/Dockerfile --tag my-bar-release \
+            --build-arg BUILDER_UID="$(id -u)" --build-arg BUILDER_GID="$(id -g)" .
+      - name: Check package
+        run: |
+          docker run --rm --volume "$PWD:/work" --user "$(id -u):$(id -g)" \
+            --env RELEASE_VERSION \
+            --env SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            --env RELEASE_COMMIT="$(git rev-parse HEAD)" \
+            my-bar-release sh -ec 'just check; just package "$RELEASE_VERSION"; just release-check'
+      - name: Test installed package with runtime dependencies only
+        run: |
+          docker run --rm --volume "$PWD:/source:ro" --workdir /source \
+            --env RELEASE_VERSION \
+            archlinux:base@sha256:4e77cf2ea5f410e6f8be5abf93ccf17ce2436e87a138c167208356711a405dbd \
+            sh -ec '
+              sed -i "s@usr/share/doc/\*@@g" /etc/pacman.conf
+              pacman -Syu --noconfirm --needed jq
+              cd "build/release/$RELEASE_VERSION"
+              sha256sum --check SHA256SUMS
+              pacman -U --noconfirm ./my-bar-bin-*.pkg.tar.zst
+              pacman -Qkk my-bar-bin
+              i3status --version
+              cd /source
+              MY_BAR_BIN=/usr/bin/my-bar sh tests/check.sh
+            '
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-package
+          path: build/release/${{ env.RELEASE_VERSION }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
