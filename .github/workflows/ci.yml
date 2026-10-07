@@ -16,10 +16,14 @@ concurrency:
 
 jobs:
   check:
-    name: Build, lint, analyze, test and sanitize
+    name: ${{ matrix.task }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     container: archlinux:base-devel
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [build, format-check, lint, analyze, test, sanitize]
     steps:
       - name: Install native toolchain
         run: pacman -Syu --noconfirm --needed git clang just jq libx11 libnm json-c
@@ -34,19 +38,10 @@ jobs:
           clang-tidy --version
           clang-format --version
           just --version
-      - name: Build with warnings as errors
-        run: just build
-      - name: Check formatting
-        run: just format-check
-      - name: Lint and Clang Static Analyzer
-        run: just lint
-      - name: GCC static analyzer
-        run: just analyze
-      - name: Unit and stream integration tests
-        run: just test
-      - name: Address, leak and undefined-behavior sanitizers
-        run: just sanitize
+      - name: Run ${{ matrix.task }}
+        run: just ${{ matrix.task }}
       - name: Upload executable
+        if: matrix.task == 'build'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: my-bar-linux-x86_64
