@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0' }}
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate version
+        run: sh scripts/validate-version.sh "$RELEASE_VERSION"
+      - name: Build release environment
+        run: docker build --file release/Dockerfile --tag my-bar-release .
+      - name: Check and package
+        run: |
+          docker run --rm --volume "$PWD:/work" \
+            --env RELEASE_VERSION \
+            --env SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            --env RELEASE_COMMIT="$(git rev-parse HEAD)" \
+            my-bar-release sh -ec 'just check; just package "$RELEASE_VERSION"; just release-check'
+      - name: Test archive with runtime dependencies only
+        run: |
+          docker run --rm --volume "$PWD:/source:ro" --workdir /source \
+            --env RELEASE_VERSION \
+            debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f \
+            sh -ec '
+              apt-get update
+              apt-get install -y --no-install-recommends libx11-6 libsystemd0 libjson-c5 i3status jq
+              cd "build/release/$RELEASE_VERSION"
+              sha256sum --check SHA256SUMS
+              tar -xzf "my-bar-$RELEASE_VERSION-linux-x86_64-debian13.tar.gz" -C /tmp
+              cd /source
+              MY_BAR_BIN="/tmp/my-bar-$RELEASE_VERSION-linux-x86_64-debian13/my-bar" sh tests/check.sh
+            '
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-package
+          path: build/release/${{ env.RELEASE_VERSION }}/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: package
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.actor == 'rultor'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: release-package
+          path: dist
+      - name: Publish checked assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        working-directory: dist
+        run: sh ../scripts/publish.sh "$RELEASE_VERSION"

@@ -120,3 +120,49 @@ repository access; the hosted 0pdd bot handles issue creation and closure.
 To record real follow-up work in C, use a comment such as
 `/* @todo #42:30min Describe the concrete remaining work here. */`, replacing 42
 with the related issue number. No placeholder puzzles are included in the code.
+
+## Releases
+
+Request a stable release in a GitHub issue after the release configuration is
+merged into master:
+
+```text
+@rultor release, tag is `v0.1.0`
+```
+
+Use `vMAJOR.MINOR.PATCH` without leading zeroes. Rultor validates the version,
+runs the merge checks on the local worker, and pushes the tag only on success.
+The separate **Release** workflow then builds the exact tagged source in a
+pinned Debian 13 container. It runs all checks, strips a copy of the executable,
+checks the archive, and tests it in a clean container with runtime dependencies.
+
+For tags pushed by `rultor`, the workflow automatically publishes a GitHub
+Release with `my-bar-vX.Y.Z-linux-x86_64-debian13.tar.gz` and `SHA256SUMS`. The
+archive contains the executable, MIT license, README, and version/commit metadata.
+Checksums detect corruption; they are not a signature. Pull requests and manual
+workflow runs validate packaging without publishing. Rultor's successful tag
+creation and the successful GitHub Release workflow are separate steps.
+
+Download both assets, verify them with `sha256sum --check SHA256SUMS`, and extract
+the archive. On Debian 13, install runtime dependencies with:
+
+```sh
+sudo apt-get install i3status libx11-6 libsystemd0 libjson-c5
+install -Dm755 my-bar ~/.local/bin/my-bar
+```
+
+Run the install command from the extracted directory. The binary targets Debian
+13 x86-64; compatibility with other distributions or architectures is not promised.
+A graphical X11 session is needed for keyboard status, and NetworkManager/D-Bus
+is used for VPN status.
+
+For local packaging, build `release/Dockerfile` and run `just package v0.1.0`
+inside that container after `just check`. Set `SOURCE_DATE_EPOCH` to the source
+commit timestamp and `RELEASE_COMMIT` to its full SHA when the Git metadata is
+not mounted into the container. `just release-check` validates the archive
+selected by `RELEASE_VERSION` (default `v0.0.0`), including repeatable packaging.
+Artifacts are written below `build/release/` and removed by `just clean`.
+
+A failed upload leaves a draft release; rerun the failed workflow to finish it.
+Already published assets are never replaced automatically. No additional GitHub
+personal access token or worker secret is needed by the publication workflow.

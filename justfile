@@ -51,3 +51,12 @@ run: build
 
 install: check
     install -Dm755 build/my-bar "$HOME/.local/bin/my-bar"
+
+[positional-arguments]
+package version: build
+    sh scripts/package.sh "$1"
+
+release-check:
+    shellcheck -x scripts/*.sh tests/release.sh tests/publish.sh
+    sh tests/release.sh
+    sh tests/publish.sh
