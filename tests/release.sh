@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 sh scripts/validate-version.sh v0.1.0
-for version in '' 0.1.0 v01.2.3 v1.2 v1.2.3-rc1 'v1.2.3/../escape' 'v1.2.3;exit 0'; do
+multiline=$(printf 'v1.2.3\nv4.5.6')
+for version in '' 0.1.0 v01.2.3 v1.2 v1.2.3-rc1 'v1.2.3/../escape' 'v1.2.3;exit 0' "$multiline"; do
     if sh scripts/validate-version.sh "$version" >/dev/null 2>&1; then
         echo 'FAIL: invalid release version accepted' >&2
         exit 1
