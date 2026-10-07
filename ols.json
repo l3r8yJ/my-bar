@@ -1,0 +1,7 @@
+{
+    "odin_command": ".tools/odin/odin",
+    "checker_args": "-vet -strict-style -vet-tabs -vet-using-param -disallow-do -warnings-as-errors",
+    "enable_format": true,
+    "profiles": [{"name": "default", "checker_path": ["src"]}],
+    "profile": "default"
+}

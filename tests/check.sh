@@ -40,7 +40,6 @@ sed '1d' "$work/stream" > "$work/stream.json"
 printf ']\n' >> "$work/stream.json"
 jq -e 'length == 1000 and all(.[]; length == 6)' "$work/stream.json" > /dev/null
 for MY_BAR_FRAME in 'not-json' '[{}]' '[null]' '[{"full_text":3}]'; do
-    export MY_BAR_FRAME
     if "$bar" --once > /dev/null 2>"$work/error"; then
         echo "FAIL: accepted malformed status frame: $MY_BAR_FRAME" >&2
         exit 1
