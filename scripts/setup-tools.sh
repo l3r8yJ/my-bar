@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 destination=${1:-.tools}
-version=dev-2026-10
-ols=ec8606b97788d415d8b5ffa83782c7be52c6b14a
-if [ -x "$destination/odin/odin" ] && [ -x "$destination/odinfmt" ] && [ "$(cat "$destination/version" 2>/dev/null)" = "$version/$ols" ]; then
+version=0.8.4
+formatter=0.3.3
+if [ -x "$destination/c3/c3c" ] && [ -x "$destination/c3fmt" ] && [ "$(cat "$destination/version" 2>/dev/null)" = "$version/$formatter" ]; then
     exit 0
 fi
 if [ "$(uname -s)/$(uname -m)" != Linux/x86_64 ]; then
@@ -14,15 +14,16 @@ mkdir -p "$destination"
 destination=$(cd "$destination" && pwd)
 work=$(mktemp -d "$destination/setup.XXXXXX")
 trap 'rm -rf "$work"' EXIT HUP INT TERM
-curl --fail --location --retry 3 "https://github.com/odin-lang/Odin/releases/download/$version/odin-linux-amd64-$version.tar.gz" -o "$work/odin.tar.gz"
-printf '%s  %s\n' c3c8b095621fd0c75f7f73e3a0829f1b4d45324225f20ba11ed8dc4da310a8ab "$work/odin.tar.gz" | sha256sum --check
-mkdir "$work/odin" "$work/ols"
-tar -xzf "$work/odin.tar.gz" --strip-components=1 -C "$work/odin"
-curl --fail --location --retry 3 "https://codeload.github.com/DanielGavin/ols/tar.gz/$ols" -o "$work/ols.tar.gz"
-printf '%s  %s\n' 9177999d9a443945b1d52fbda27fb01959bf75249c7adaf346951a38407c8379 "$work/ols.tar.gz" | sha256sum --check
-tar -xzf "$work/ols.tar.gz" --strip-components=1 -C "$work/ols"
-"$work/odin/odin" build "$work/ols/tools/odinfmt/main.odin" -file "-collection:src=$work/ols/src" "-out:$work/odinfmt" -o:speed
-rm -rf "$destination/odin"
-mv "$work/odin" "$destination/odin"
-mv "$work/odinfmt" "$destination/odinfmt"
-printf '%s\n' "$version/$ols" > "$destination/version"
+curl --fail --location --retry 3 "https://github.com/c3lang/c3c/releases/download/v$version/c3-linux.tar.gz" -o "$work/c3.tar.gz"
+printf '%s  %s\n' 224b9a706761cc1e54e2bf26bcd777edd0971f5fbc773016957071b11ff084c9 "$work/c3.tar.gz" | sha256sum --check
+mkdir "$work/c3"
+tar -xzf "$work/c3.tar.gz" --strip-components=1 -C "$work/c3"
+"$work/c3/c3c" --version
+curl --fail --location --retry 3 "https://github.com/lmichaudel/c3fmt/releases/download/v$formatter/c3fmt-linux" -o "$work/c3fmt"
+printf '%s  %s\n' 4dbb69372d4bd9695732ac5cd01f0f4de3adb7df1beb8c50cc97465a935a2820 "$work/c3fmt" | sha256sum --check
+chmod +x "$work/c3fmt"
+"$work/c3fmt" --version
+rm -rf "$destination/c3"
+mv "$work/c3" "$destination/c3"
+mv "$work/c3fmt" "$destination/c3fmt"
+printf '%s\n' "$version/$formatter" > "$destination/version"

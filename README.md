@@ -3,7 +3,7 @@
 [![CI](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/l3r8yJ/my-bar/actions/workflows/ci.yml)
 [![PDD status](https://www.0pdd.com/svg?name=l3r8yJ/my-bar)](https://www.0pdd.com/p?name=l3r8yJ/my-bar)
 
-A small native Odin status bar for i3: keyboard layout, NetworkManager VPNs, disk
+A small native C3 status bar for i3: keyboard layout, NetworkManager VPNs, disk
 and RAM usage, plus Wi-Fi, volume and the clock from i3status.
 
 ## Install
@@ -49,17 +49,17 @@ Run `my-bar --once` to inspect one status frame.
 Install the build and check tools on Arch:
 
 ```sh
-sudo pacman -S --needed base-devel git clang just jq libx11 systemd-libs dbus i3status curl
+sudo pacman -S --needed base-devel git just jq libx11 systemd-libs dbus i3status curl
 git clone https://github.com/l3r8yJ/my-bar.git
 cd my-bar
 just build
 just install
 ```
 
-The build downloads a pinned Odin compiler and formatter into `.tools/`.
+The build downloads a pinned C3 compiler and formatter into `.tools/`.
 
-`just build` produces `build/my-bar`. `just install` runs all checks and installs
-it to `~/.local/bin/my-bar`.
+`just build` produces `build/my-bar`. `just install` installs it to
+`~/.local/bin/my-bar`.
 
-Use `just check` to run formatting, compiler vet checks, tests and sanitizers;
+Use `just check` to run formatting, compiler checks, tests and sanitizers;
 `just format` to format the code; and `just clean` to remove build files.

@@ -1,9 +1,11 @@
 tools := env('MY_BAR_TOOLS', justfile_directory() + '/.tools')
-odin := tools + '/odin/odin'
-formatter := tools + '/odinfmt'
-flags := '-vet -strict-style -vet-tabs -vet-using-param -disallow-do -warnings-as-errors'
-test_flags := '-define:ODIN_TEST_TRACK_MEMORY=true -define:ODIN_TEST_FAIL_ON_BAD_MEMORY=true'
-release_flags := '-o:size -microarch:x86-64 -stack-protector:strong -extra-linker-flags:"-Wl,-z,relro,-z,now"'
+c3 := tools + '/c3/c3c'
+formatter := tools + '/c3fmt'
+flags := '--output-dir . --build-dir build --validation=strict --warn-deadcode=error --warn-recursivecontracts=error --warn-methodvisibility=error --warn-methodsnotresolved=error --warn-deprecation=error --warn-builtin=error --safe=yes --x86cpu=baseline --stack-protector=strong'
+link_flags := '-l X11 -l systemd -z "-z relro" -z "-z now"'
+release_flags := '--optlevel=more --optsize=small --single-module=yes -g0'
+sources := `find src -name '*.c3' ! -name '*_test.c3' ! -path '*/fixture/*' | sort | tr '\n' ' '`
+test_sources := `find src -name '*.c3' ! -path '*/fixture/*' | sort | tr '\n' ' '`
 
 default: check
 
@@ -15,40 +17,38 @@ clean:
 
 build: setup
     mkdir -p build
-    '{{odin}}' build src {{flags}} {{release_flags}} -out:build/my-bar
+    '{{c3}}' compile {{sources}} {{flags}} {{release_flags}} {{link_flags}} -o build/my-bar
 
 test: build
-    for package in src src/metrics src/stream; do '{{odin}}' test "$package" {{flags}} {{test_flags}} -out:build/test-$(basename "$package") || exit; done
-    '{{odin}}' build src/keyboard/fixture -build-mode:dll {{flags}} -out:build/xkb-fixture.so
-    '{{odin}}' build src/keyboard -build-mode:test {{flags}} {{test_flags}} -out:build/test-keyboard
-    MY_BAR_KEYBOARD_TEST=1 LD_PRELOAD="$PWD/build/xkb-fixture.so" ./build/test-keyboard
-    '{{odin}}' build src/vpn -build-mode:test {{flags}} {{test_flags}} -out:build/test-vpn
-    '{{odin}}' build tests/vpn-service {{flags}} -out:build/vpn-service
-    VPN_TEST_BIN=./build/test-vpn VPN_SERVICE_BIN=./build/vpn-service sh tests/vpn-integration.sh
+    '{{c3}}' compile-test {{test_sources}} {{flags}} {{link_flags}} --suppress-run -o build/test-all
+    ./build/test-all
+    '{{c3}}' dynamic-lib src/keyboard/fixture/fixture.c3 src/bindings/xkb.c3 {{flags}} --no-entry --no-headers -o build/xkb-fixture
+    MY_BAR_KEYBOARD_TEST=1 LD_PRELOAD="$PWD/build/xkb-fixture.so" ./build/test-all
+    '{{c3}}' compile tests/vpn-service/main.c3 {{flags}} -l systemd -o build/vpn-service
+    VPN_TEST_BIN=./build/test-all VPN_SERVICE_BIN=./build/vpn-service sh tests/vpn-integration.sh
     sh tests/check.sh
     sh tests/process.sh
 
 format: setup
-    '{{formatter}}' src -w
-    '{{formatter}}' tests/vpn-service -w
+    find src tests/vpn-service -name '*.c3' -exec '{{formatter}}' -i {} +
 
 format-check: setup
-    sh scripts/check-format.sh '{{formatter}}' src tests/vpn-service
+    find src tests/vpn-service -name '*.c3' -exec '{{formatter}}' --check {} +
 
 lint: setup
-    '{{odin}}' check src {{flags}} -vet-unused-procedures -vet-packages:main,keyboard,vpn,metrics,errors,status,bindings,stream
-    sh scripts/check-tools.sh '{{tools}}'
+    '{{c3}}' compile-only {{sources}} {{flags}} --no-obj
+    sh scripts/check-tools.sh '{{tools}}' {{flags}}
 
 sanitize: setup
     mkdir -p build
-    '{{odin}}' build src {{flags}} -debug -sanitize:address -out:build/my-bar-sanitize
-    for package in src src/metrics src/stream; do ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 '{{odin}}' test "$package" {{flags}} {{test_flags}} -debug -sanitize:address -out:build/test-$(basename "$package")-sanitize || exit; done
-    '{{odin}}' build src/keyboard/fixture -build-mode:dll {{flags}} -debug -sanitize:address -out:build/xkb-fixture-sanitize.so
-    '{{odin}}' build src/keyboard -build-mode:test {{flags}} {{test_flags}} -debug -sanitize:address -out:build/test-keyboard-sanitize
-    ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 MY_BAR_KEYBOARD_TEST=1 LD_PRELOAD="$PWD/build/xkb-fixture-sanitize.so" ./build/test-keyboard-sanitize
-    '{{odin}}' build src/vpn -build-mode:test {{flags}} {{test_flags}} -debug -sanitize:address -out:build/test-vpn-sanitize
-    '{{odin}}' build tests/vpn-service {{flags}} -debug -sanitize:address -out:build/vpn-service-sanitize
-    ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 VPN_TEST_BIN=./build/test-vpn-sanitize VPN_SERVICE_BIN=./build/vpn-service-sanitize sh tests/vpn-integration.sh
+    '{{c3}}' compile {{sources}} {{flags}} {{link_flags}} -g --sanitize=address -o build/my-bar-sanitize
+    '{{c3}}' compile-test {{test_sources}} {{flags}} {{link_flags}} -g --sanitize=address --suppress-run -o build/test-all-sanitize
+    ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 ./build/test-all-sanitize
+    '{{c3}}' compile-only src/keyboard/fixture/fixture.c3 src/bindings/xkb.c3 {{flags}} --no-entry -g --sanitize=address --reloc=pic --single-module=yes --obj-out build/xkb-sanitize
+    cc -shared build/xkb-sanitize/bar.fixture.o -fsanitize=address -o build/xkb-fixture-sanitize.so
+    ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 MY_BAR_KEYBOARD_TEST=1 LD_PRELOAD="$(cc -print-file-name=libasan.so):$PWD/build/xkb-fixture-sanitize.so" ./build/test-all-sanitize
+    '{{c3}}' compile tests/vpn-service/main.c3 {{flags}} -l systemd -g --sanitize=address -o build/vpn-service-sanitize
+    ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 VPN_TEST_BIN=./build/test-all-sanitize VPN_SERVICE_BIN=./build/vpn-service-sanitize sh tests/vpn-integration.sh
     ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 MY_BAR_BIN=./build/my-bar-sanitize sh tests/check.sh
     ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 MY_BAR_BIN=./build/my-bar-sanitize sh tests/process.sh
 
