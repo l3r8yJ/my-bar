@@ -1,4 +1,4 @@
-flags := "-std=c17 -include src/no_goto.h -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
+flags := "-std=c17 -include lint/no-goto.h -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
 packages := "x11 libsystemd json-c"
 
 default: check
@@ -20,10 +20,10 @@ test: build
     sh tests/check.sh
 
 format:
-    clang-format -i src/*.c src/*.h src/error/*.h tests/*.c
+    clang-format -i src/*.c src/*.h src/error/*.h lint/*.h tests/*.c
 
 format-check:
-    clang-format --dry-run --Werror src/*.c src/*.h src/error/*.h tests/*.c
+    clang-format --dry-run --Werror src/*.c src/*.h src/error/*.h lint/*.h tests/*.c
 
 lint:
     sh tests/lint-policy.sh

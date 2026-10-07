@@ -20,17 +20,17 @@ int sample(void);
 int sample(void) { void *label = &&done; goto *label; done: return 0; }
 C
 for compiler in cc clang; do
-    "$compiler" -std=c17 -Werror -include src/no_goto.h -fsyntax-only "$work/valid.c"
+    "$compiler" -std=c17 -Werror -include lint/no-goto.h -fsyntax-only "$work/valid.c"
     for fixture in direct macro indirect; do
-        if "$compiler" -std=c17 -Werror -include src/no_goto.h -fsyntax-only "$work/$fixture.c" > "$work/log" 2>&1; then
+        if "$compiler" -std=c17 -Werror -include lint/no-goto.h -fsyntax-only "$work/$fixture.c" > "$work/log" 2>&1; then
             echo "FAIL: $compiler accepted $fixture jump" >&2
             exit 1
         fi
         grep -q 'poisoned' "$work/log"
     done
 done
-clang-tidy --config-file=.clang-tidy "$work/valid.c" -- -std=c17 -include "$PWD/src/no_goto.h" > "$work/log" 2>&1
-if clang-tidy --config-file=.clang-tidy "$work/direct.c" -- -std=c17 -include "$PWD/src/no_goto.h" > "$work/log" 2>&1; then
+clang-tidy --config-file=.clang-tidy "$work/valid.c" -- -std=c17 -include "$PWD/lint/no-goto.h" > "$work/log" 2>&1
+if clang-tidy --config-file=.clang-tidy "$work/direct.c" -- -std=c17 -include "$PWD/lint/no-goto.h" > "$work/log" 2>&1; then
     echo 'FAIL: clang-tidy accepted a jump' >&2
     exit 1
 fi

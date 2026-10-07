@@ -65,7 +65,7 @@ static analysis and sanitizer builds. clang-tidy uses `WarningsAsErrors: '*'`;
 format drift fails `clang-format --dry-run --Werror`. `just install` requires the
 entire check suite to pass. There are no sanitizer suppressions.
 
-`goto` is forbidden by `src/no_goto.h`, force-included by every build and lint
+`goto` is forbidden by `lint/no-goto.h`, force-included by every build and lint
 command. GCC and Clang reject the token even in macros; comments and strings are
 unaffected. `just lint` verifies this policy with rejected C fixtures.
 
