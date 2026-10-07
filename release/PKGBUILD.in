@@ -1,0 +1,22 @@
+# Maintainer: l3r8yJ <46355873+l3r8yJ@users.noreply.github.com>
+pkgname=my-bar-bin
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Lightweight i3 status bar with keyboard layout, VPN and system metrics'
+arch=('x86_64')
+url='https://github.com/l3r8yJ/my-bar'
+license=('MIT')
+depends=('glibc' 'libx11' 'systemd-libs' 'json-c' 'i3status')
+provides=("my-bar=$pkgver")
+conflicts=('my-bar')
+options=('!strip' '!debug')
+source=("$url/releases/download/v$pkgver/my-bar-v$pkgver-linux-$CARCH-arch.tar.gz")
+sha256sums=('@SHA256@')
+
+package() {
+    cd "my-bar-v$pkgver-linux-$CARCH-arch"
+    install -Dm755 my-bar "$pkgdir/usr/bin/my-bar"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 BUILDINFO.txt "$pkgdir/usr/share/doc/$pkgname/BUILDINFO.txt"
+}

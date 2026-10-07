@@ -12,7 +12,13 @@ version=${RELEASE_VERSION:-v0.0.0}
 sh scripts/validate-version.sh "$version"
 output="build/release/$version"
 (cd "$output" && sha256sum --check SHA256SUMS)
-name="my-bar-$version-linux-x86_64-debian13"
+package="$output/my-bar-bin-${version#v}-1-x86_64.pkg.tar.zst"
+test "$(pacman -Qp "$package")" = "my-bar-bin ${version#v}-1"
+tar -tf "$package" | grep -qx 'usr/bin/my-bar'
+(cd "build/package/aur-$version" && makepkg --printsrcinfo) > "$output/checked.SRCINFO"
+cmp "$output/.SRCINFO" "$output/checked.SRCINFO"
+rm "$output/checked.SRCINFO"
+name="my-bar-$version-linux-x86_64-arch"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 tar -xzf "$output/$name.tar.gz" -C "$work"

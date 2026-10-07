@@ -25,8 +25,11 @@ GH
 chmod 755 "$work/bin/gh"
 export PATH="$work/bin:$PATH" GH_TEST_LOG="$work/commands"
 printf 'package fixture\n' > "$work/dist/package.tar.gz"
+printf 'arch package fixture\n' > "$work/dist/package.pkg.tar.zst"
+printf 'recipe fixture\n' > "$work/dist/PKGBUILD"
+printf 'metadata fixture\n' > "$work/dist/.SRCINFO"
 cd "$work/dist"
-sha256sum package.tar.gz > SHA256SUMS
+sha256sum package.tar.gz package.pkg.tar.zst PKGBUILD .SRCINFO > SHA256SUMS
 for GH_SCENARIO in new draft published upload_failure; do
     export GH_SCENARIO
     : > "$GH_TEST_LOG"

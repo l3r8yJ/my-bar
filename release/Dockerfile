@@ -1,7 +1,11 @@
-FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates git gcc libc6-dev \
-       pkg-config clang clang-tidy clang-format libclang-rt-dev just jq libx11-dev \
-       libsystemd-dev libjson-c-dev dbus binutils shellcheck \
-    && rm -rf /var/lib/apt/lists/*
+FROM archlinux:base-devel@sha256:996c3a1d6b0d87b01242f6fcd8cfa3ad3eece1a67ab5c8f108e20af1d7b97bdd
+RUN pacman -Syu --noconfirm --needed clang llvm just jq libx11 systemd-libs json-c dbus i3status shellcheck namcap git \
+    && pacman -Scc --noconfirm
+ARG BUILDER_UID=1000
+ARG BUILDER_GID=1000
+RUN groupadd --gid "$BUILDER_GID" builder \
+    && useradd --create-home --uid "$BUILDER_UID" --gid "$BUILDER_GID" builder
+USER builder
+ENV CFLAGS="-march=x86-64 -mtune=generic -fstack-protector-strong -fstack-clash-protection -fcf-protection" \
+    LDFLAGS="-Wl,-z,relro,-z,now"
 WORKDIR /work

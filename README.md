@@ -131,38 +131,64 @@ merged into master:
 ```
 
 Use `vMAJOR.MINOR.PATCH` without leading zeroes. Rultor validates the version,
-runs the merge checks on the local worker, and pushes the tag only on success.
-The separate **Release** workflow then builds the exact tagged source in a
-pinned Debian 13 container. It runs all checks, strips a copy of the executable,
-checks the archive, and tests it in a clean container with runtime dependencies.
+runs the checks on the local worker, and pushes the tag only on success.
+The separate **Release** workflow builds the tagged source in an Arch Linux
+x86-64 container. It runs all checks, strips a copy of the executable, builds
+an Arch package as an unprivileged user, and rejects namcap warnings and errors.
+The sole namcap exception is `dependency-not-needed i3status`: the program
+launches i3status at runtime, which ELF dependency analysis cannot detect.
+The runtime check verifies that pacman installs i3status alongside my-bar.
+A clean runtime container installs the package with pacman and tests the installed
+executable. Pull requests and manual workflow runs check packaging without
+publishing.
 
-For tags pushed by `rultor`, the workflow automatically publishes a GitHub
-Release with `my-bar-vX.Y.Z-linux-x86_64-debian13.tar.gz` and `SHA256SUMS`. The
-archive contains the executable, MIT license, README, and version/commit metadata.
-Checksums detect corruption; they are not a signature. Pull requests and manual
-workflow runs validate packaging without publishing. Rultor's successful tag
-creation and the successful GitHub Release workflow are separate steps.
+For tags pushed by `rultor`, the workflow publishes a public GitHub Release with:
 
-Download both assets, verify them with `sha256sum --check SHA256SUMS`, and extract
-the archive. On Debian 13, install runtime dependencies with:
+- `my-bar-bin-X.Y.Z-1-x86_64.pkg.tar.zst`: ready-to-install Arch package.
+- `my-bar-vX.Y.Z-linux-x86_64-arch.tar.gz`: prebuilt executable, MIT license,
+  README and version/commit metadata.
+- `PKGBUILD` and `.SRCINFO`: recipe for installing the prebuilt binary.
+- `SHA256SUMS`: checksums for all four assets; checksums are not signatures.
+
+Download the assets from [Releases](https://github.com/l3r8yJ/my-bar/releases)
+into an empty directory. For example, for version 0.1.0:
 
 ```sh
-sudo apt-get install i3status libx11-6 libsystemd0 libjson-c5
-install -Dm755 my-bar ~/.local/bin/my-bar
+sha256sum --check SHA256SUMS
+sudo pacman -U ./my-bar-bin-0.1.0-1-x86_64.pkg.tar.zst
 ```
 
-Run the install command from the extracted directory. The binary targets Debian
-13 x86-64; compatibility with other distributions or architectures is not promised.
-A graphical X11 session is needed for keyboard status, and NetworkManager/D-Bus
-is used for VPN status.
+Pacman installs the declared runtime dependencies. Configure i3 to run `my-bar`
+as its status command. The binary targets current Arch Linux x86-64; other
+distributions and architectures are not supported by this artifact. Keyboard
+status needs an X11 session; VPN status uses NetworkManager through D-Bus.
 
-For local packaging, build `release/Dockerfile` and run `just package v0.1.0`
-inside that container after `just check`. Set `SOURCE_DATE_EPOCH` to the source
-commit timestamp and `RELEASE_COMMIT` to its full SHA when the Git metadata is
-not mounted into the container. `just release-check` validates the archive
-selected by `RELEASE_VERSION` (default `v0.0.0`), including repeatable packaging.
-Artifacts are written below `build/release/` and removed by `just clean`.
+Alternatively, download `PKGBUILD` to an empty directory, review it, and run
+`paru -Bi .` or `makepkg -si` as your regular user. The recipe downloads the
+prebuilt binary from GitHub and verifies its checksum; it does not compile C.
+This does not require an AUR account. The project is not yet listed in the AUR,
+so `paru -S my-bar-bin` and automatic AUR updates are not available. Once AUR
+registration is available, the release's `PKGBUILD` and `.SRCINFO` can be pushed
+to `ssh://aur@aur.archlinux.org/my-bar-bin.git` by its maintainer.
 
-A failed upload leaves a draft release; rerun the failed workflow to finish it.
-Already published assets are never replaced automatically. No additional GitHub
-personal access token or worker secret is needed by the publication workflow.
+For local packaging:
+
+```sh
+docker build -f release/Dockerfile -t my-bar-release \
+  --build-arg BUILDER_UID="$(id -u)" --build-arg BUILDER_GID="$(id -g)" .
+docker run --rm -v "$PWD:/work" \
+  -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+  -e RELEASE_COMMIT="$(git rev-parse HEAD)" -e RELEASE_VERSION=v0.1.0 \
+  my-bar-release sh -ec 'just check; just package "$RELEASE_VERSION"; just release-check'
+```
+
+`just release-check` validates the package selected by `RELEASE_VERSION`
+(default `v0.0.0`), including repeatable binary archive packaging. Artifacts live
+under `build/release/` and are removed by `just clean`. Container base images are
+pinned, but Arch packages are updated when building the image; release builds
+are not guaranteed reproducible across different package repository snapshots.
+
+Rultor tag creation and GitHub publication are separate steps. A failed upload
+leaves a draft release; rerun the failed workflow to finish it. Published assets
+are never replaced automatically. No personal access token or worker secret is
+needed for publication, and downloading public release assets needs no account.

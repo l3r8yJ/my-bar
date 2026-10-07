@@ -28,32 +28,37 @@ jobs:
       - name: Validate version
         run: sh scripts/validate-version.sh "$RELEASE_VERSION"
       - name: Build release environment
-        run: docker build --file release/Dockerfile --tag my-bar-release .
-      - name: Check and package
         run: |
-          docker run --rm --volume "$PWD:/work" \
+          docker build --file release/Dockerfile --tag my-bar-release \
+            --build-arg BUILDER_UID="$(id -u)" --build-arg BUILDER_GID="$(id -g)" .
+      - name: Check package
+        run: |
+          docker run --rm --volume "$PWD:/work" --user "$(id -u):$(id -g)" \
             --env RELEASE_VERSION \
             --env SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
             --env RELEASE_COMMIT="$(git rev-parse HEAD)" \
             my-bar-release sh -ec 'just check; just package "$RELEASE_VERSION"; just release-check'
-      - name: Test archive with runtime dependencies only
+      - name: Test installed package with runtime dependencies only
         run: |
           docker run --rm --volume "$PWD:/source:ro" --workdir /source \
             --env RELEASE_VERSION \
-            debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f \
+            archlinux:base@sha256:4e77cf2ea5f410e6f8be5abf93ccf17ce2436e87a138c167208356711a405dbd \
             sh -ec '
-              apt-get update
-              apt-get install -y --no-install-recommends libx11-6 libsystemd0 libjson-c5 i3status jq
+              sed -i "s@usr/share/doc/\*@@g" /etc/pacman.conf
+              pacman -Syu --noconfirm --needed jq
               cd "build/release/$RELEASE_VERSION"
               sha256sum --check SHA256SUMS
-              tar -xzf "my-bar-$RELEASE_VERSION-linux-x86_64-debian13.tar.gz" -C /tmp
+              pacman -U --noconfirm ./my-bar-bin-*.pkg.tar.zst
+              pacman -Qkk my-bar-bin
+              i3status --version
               cd /source
-              MY_BAR_BIN="/tmp/my-bar-$RELEASE_VERSION-linux-x86_64-debian13/my-bar" sh tests/check.sh
+              MY_BAR_BIN=/usr/bin/my-bar sh tests/check.sh
             '
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-package
           path: build/release/${{ env.RELEASE_VERSION }}/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
 

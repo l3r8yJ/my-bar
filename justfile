@@ -8,7 +8,7 @@ clean:
 
 build:
     mkdir -p build
-    cc {{flags}} -O2 $(pkg-config --cflags {{packages}}) src/*.c -o build/my-bar $(pkg-config --libs {{packages}})
+    cc {{flags}} -O2 ${CFLAGS:-} $(pkg-config --cflags {{packages}}) src/*.c -o build/my-bar ${LDFLAGS:-} $(pkg-config --libs {{packages}})
 
 test: build
     cc {{flags}} -O2 $(pkg-config --cflags x11 json-c) tests/keyboard.c src/keyboard.c -o build/test-keyboard $(pkg-config --libs json-c)
