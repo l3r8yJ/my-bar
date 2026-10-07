@@ -1,4 +1,4 @@
-flags := "-std=c17 -include lint/no-goto.h -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
+flags := "-std=c17 $(printf -- '-include %s ' lint/*.h) -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -Wformat=2 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes"
 packages := "x11 libsystemd json-c"
 
 default: check

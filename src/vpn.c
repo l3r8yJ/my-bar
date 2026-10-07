@@ -1,6 +1,5 @@
 #include "error/result.h"
 #include "modules.h"
-#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
