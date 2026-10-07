@@ -6,7 +6,7 @@ pkgdesc='Lightweight i3 status bar with keyboard layout, VPN and system metrics'
 arch=('x86_64')
 url='https://github.com/l3r8yJ/my-bar'
 license=('MIT')
-depends=('glibc' 'libx11' 'systemd-libs' 'i3status')
+depends=('glibc' 'libx11' 'systemd-libs' 'json-c' 'i3status')
 provides=("my-bar=$pkgver")
 conflicts=('my-bar')
 options=('!strip' '!debug')
