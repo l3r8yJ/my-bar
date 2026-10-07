@@ -13,9 +13,9 @@ if state=$(gh release view "$version" --json isDraft,isPrerelease,assets --jq 'i
         draft) ;;
         *) echo 'Unexpected release state' >&2; exit 1 ;;
     esac
-    gh release upload "$version" ./*.tar.gz ./*.pkg.tar.zst PKGBUILD .SRCINFO SHA256SUMS --clobber
+    gh release upload "$version" ./*.tar.gz ./*.pkg.tar.zst PKGBUILD SRCINFO SHA256SUMS --clobber
 else
-    gh release create "$version" ./*.tar.gz ./*.pkg.tar.zst PKGBUILD .SRCINFO SHA256SUMS \
+    gh release create "$version" ./*.tar.gz ./*.pkg.tar.zst PKGBUILD SRCINFO SHA256SUMS \
         --verify-tag --draft --generate-notes --title "$version"
 fi
 gh release edit "$version" --draft=false --prerelease=false --title "$version"

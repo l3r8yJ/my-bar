@@ -32,7 +32,8 @@ sed -e "s/@VERSION@/${version#v}/g" -e "s/@SHA256@/$checksum/g" \
     release/PKGBUILD.in > "$recipe/PKGBUILD"
 cp "$output/$name.tar.gz" "$recipe/"
 (cd "$recipe" && makepkg --force --nodeps && makepkg --printsrcinfo > .SRCINFO)
-cp "$recipe/PKGBUILD" "$recipe/.SRCINFO" "$recipe/"*.pkg.tar.zst "$output/"
+cp "$recipe/PKGBUILD" "$recipe/"*.pkg.tar.zst "$output/"
+cp "$recipe/.SRCINFO" "$output/SRCINFO"
 namcap -m "$recipe/PKGBUILD" "$output/"*.pkg.tar.zst > "$recipe/namcap.log"
 sed '/^my-bar-bin W: dependency-not-needed i3status$/d' "$recipe/namcap.log" > "$recipe/namcap-checked.log"
 cat "$recipe/namcap-checked.log"
@@ -40,5 +41,5 @@ if grep -Eq ' (E|W): ' "$recipe/namcap-checked.log"; then
     echo 'FAIL: package lint reported errors or warnings' >&2
     exit 1
 fi
-(cd "$output" && sha256sum ./*.tar.gz ./*.pkg.tar.zst PKGBUILD .SRCINFO > SHA256SUMS)
+(cd "$output" && sha256sum ./*.tar.gz ./*.pkg.tar.zst PKGBUILD SRCINFO > SHA256SUMS)
 printf 'Created %s/%s.tar.gz\n' "$output" "$name"
