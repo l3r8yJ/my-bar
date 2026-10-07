@@ -1,8 +1,12 @@
 docker:
-  image: archlinux:base-devel
+  image: debian:trixie-slim
   as_root: true
 install:
-  - pacman -Syu --noconfirm --needed git clang just jq libx11 libnm json-c
+  - apt-get update
+  - >-
+    apt-get install -y --no-install-recommends
+    ca-certificates git gcc libc6-dev pkg-config clang clang-tidy clang-format
+    libclang-rt-dev just jq libx11-dev libnm-dev libjson-c-dev
 merge:
   script:
     - just check

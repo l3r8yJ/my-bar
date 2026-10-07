@@ -85,8 +85,9 @@ ptrace-based sandboxes. Do not disable leak detection to bypass that failure.
 
 ## Repository bots
 
-[Rultor](https://doc.rultor.com/basics.html) runs `just check` in the same Arch
-Linux environment before merging. A repository collaborator can request a merge
+[Rultor](https://doc.rultor.com/basics.html) runs `just check` in
+`debian:trixie-slim`, installing only required build dependencies before merging.
+A repository collaborator can request a merge
 by commenting `@rultor merge` on a pull request. `.rultor.yml` defines the build;
 it does not configure deployment or releases.
 
@@ -96,6 +97,10 @@ when the puzzles are removed. `.0pdd.yml` limits each scan to ten new issues;
 `.pdd` defines the source paths. Both bots need repository collaborator access,
 and 0pdd needs a push webhook to `https://www.0pdd.com/hook/github` with JSON
 content. Its configuration becomes active once these files are merged to `master`.
+
+The separate **Puzzles** GitHub Actions workflow validates puzzles on pull
+requests and pushes using the PDD action used by 0pdd itself. It has read-only
+repository access; the hosted 0pdd bot handles issue creation and closure.
 
 To record real follow-up work in C, use a comment such as
 `/* @todo #42:30min Describe the concrete remaining work here. */`, replacing 42
