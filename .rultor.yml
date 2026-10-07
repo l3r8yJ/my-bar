@@ -1,12 +1,18 @@
+assets:
+  worker-ssh-key: "l3r8yJ/home#assets/my-bar-worker-ssh"
+  worker-ssh-config: "l3r8yJ/home#assets/my-bar-worker-config"
+  worker-known-hosts: "l3r8yJ/home#assets/my-bar-worker-known-hosts"
 docker:
   image: debian:trixie-slim
   as_root: true
 install:
   - apt-get update
-  - >-
-    apt-get install -y --no-install-recommends
-    ca-certificates git gcc libc6-dev pkg-config clang clang-tidy clang-format
-    libclang-rt-dev just jq libx11-dev libnm-dev libsystemd-dev libjson-c-dev dbus
+  - apt-get install -y --no-install-recommends ca-certificates git openssh-client
 merge:
   script:
-    - just check
+    - chmod 600 ../worker-ssh-key ../worker-ssh-config
+    - set -o pipefail
+    - >-
+      git archive HEAD |
+      ssh -F ../worker-ssh-config -E ../worker-ssh.log rultor-worker
+      'docker run --rm -i my-bar-build:local sh -ec "mkdir /work; cd /work; tar -xf -; just check"'
