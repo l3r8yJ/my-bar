@@ -1,10 +1,8 @@
 module bar::stream;
 import std::encoding::json, std::collections::object;
 
-fn void preserves_fields_and_unicode() @test
-{
-	@pool()
-	{
+fn void preserves_fields_and_unicode() @test {
+	@pool() {
 		String rendered = render(
 			`[{"full_text":"  Русский \"\\\n ","count":9007199254740993,"urgent":true,"nested":{"a":[null,false,3]}}]`,
 			{ { "EN", "" }, { "VPN: off", "#FF5555" }, { "RAM", "" } }
@@ -23,8 +21,7 @@ fn void preserves_fields_and_unicode() @test
 	};
 }
 
-fn void rejects_malformed_frames() @test
-{
+fn void rejects_malformed_frames() @test {
 	String[] inputs = {
 		"{}",
 		"null",
@@ -38,10 +35,8 @@ fn void rejects_malformed_frames() @test
 		"[",
 		"[{\"full_text\":\"x\",\"bad\":01}]"
 	};
-	foreach (String input : inputs)
-	{
-		@pool()
-		{
+	foreach (String input : inputs) {
+		@pool() {
 			if (try render(
 				input,
 				{ { "EN", "" }, { "VPN: off", "" }, { "RAM", "" } }
@@ -50,10 +45,8 @@ fn void rejects_malformed_frames() @test
 	}
 }
 
-fn void accepts_empty_frame() @test
-{
-	@pool()
-	{
+fn void accepts_empty_frame() @test {
+	@pool() {
 		String rendered = render("[]", { { "EN", "" }, { "VPN: off", "" }, { "RAM", "" } })!!;
 		Object* result  = json::tparse(rendered, JSON)!!;
 		assert(result.len() == 3);

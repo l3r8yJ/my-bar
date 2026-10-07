@@ -2,30 +2,25 @@ module bar::vpn;
 import bar::bus, bar::errors, bar::status;
 import libc;
 import std::core::dstring;
-struct Context
-{
+struct Context {
 	void* bus;
 }
 const ZString SERVICE          = "org.freedesktop.NetworkManager";
 const ZString ACTIVE_INTERFACE = "org.freedesktop.NetworkManager.Connection.Active";
-fn void? check(int result)
-{
+fn void? check(int result) {
 	if (result == -12) return errors::OUT_OF_MEMORY~;
 	if (result < 0) return errors::UNAVAILABLE~;
 }
-fn void? init(Context* ctx)
-{
+fn void? init(Context* ctx) {
 	close(ctx);
 	check(bus::open_system(&ctx.bus))!;
 	defer catch close(ctx);
 	check(bus::set_method_call_timeout(ctx.bus, 100_000))!;
 }
-fn void close(Context* ctx)
-{
+fn void close(Context* ctx) {
 	ctx.bus = bus::flush_close_unref(ctx.bus);
 }
-fn ZString? connection_name(Context* ctx, ZString path)
-{
+fn ZString? connection_name(Context* ctx, ZString path) {
 	ZString type;
 	check(bus::get_property_string(ctx.bus, SERVICE, path, ACTIVE_INTERFACE, "Type", null, &type))!;
 	defer libc::free(type);
@@ -40,11 +35,9 @@ fn ZString? connection_name(Context* ctx, ZString path)
 	if (!name) return errors::UNAVAILABLE~;
 	return name;
 }
-fn Block? block(Context* ctx)
-{
+fn Block? block(Context* ctx) {
 	if (!ctx.bus) init(ctx)!;
-	defer
-	{
+	defer {
 		if (bus::is_open(ctx.bus) <= 0) ctx.bus = bus::unref(ctx.bus);
 	}
 	void* connections;
@@ -65,8 +58,7 @@ fn Block? block(Context* ctx)
 	DString text;
 	text.append_string("VPN: ");
 	bool active;
-	while (true)
-	{
+	while (true) {
 		ZString path;
 		int result = bus::message_read_basic(connections, 'o', &path);
 		if (!result) break;

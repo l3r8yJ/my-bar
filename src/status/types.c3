@@ -1,7 +1,6 @@
 module bar::status;
 
-struct Block
-{
+struct Block {
 	String text;
 	String color;
 }

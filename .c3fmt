@@ -1,0 +1,4 @@
+brace_style: K&R
+else_on_newline: false
+max_blank_line_between_statements: 1
+newline_at_eof: true

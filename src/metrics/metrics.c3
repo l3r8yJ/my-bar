@@ -1,8 +1,7 @@
 module bar::metrics;
 import bar::errors, bar::status;
 import libc;
-struct Statvfs
-{
+struct Statvfs {
 	ulong bsize;
 	ulong frsize;
 	ulong blocks;
@@ -17,14 +16,12 @@ struct Statvfs
 	int[6] spare;
 }
 extern fn int statvfs(ZString path, Statvfs* info);
-fn ulong? memory_value(String line, String key)
-{
+fn ulong? memory_value(String line, String key) {
 	if (line.len < key.len + 5 || !line.starts_with(key) || !line.ends_with(" kB\n")) return errors::INVALID_INPUT~;
 	String digits = line[key.len:line.len - key.len - 4].trim_left(" \t");
 	if (!digits.len) return errors::INVALID_INPUT~;
 	ulong result;
-	foreach (digit : digits)
-	{
+	foreach (digit : digits) {
 		if (digit < '0' || digit > '9') return errors::INVALID_INPUT~;
 		ulong value = (ulong)(digit - '0');
 		if (result > (ulong::max - value) / 10) return errors::INVALID_INPUT~;
@@ -32,8 +29,7 @@ fn ulong? memory_value(String line, String key)
 	}
 	return result;
 }
-fn Block? block()
-{
+fn Block? block() {
 	const double GIB = 1024.0 * 1024.0 * 1024.0;
 	String disk      = "SSD: ?";
 	String ram       = "RAM: ?";
@@ -47,24 +43,20 @@ fn Block? block()
 		(double)fs.blocks * (double)fs.frsize / GIB
 	);
 	libc::CFile file = libc::fopen("/proc/meminfo", "r");
-	if (file)
-	{
+	if (file) {
 		defer libc::fclose(file);
 		char[1024] buffer;
 		ulong total;
 		ulong available;
 		bool has_total;
 		bool has_available;
-		while (libc::fgets(&buffer, (int)buffer.len, file))
-		{
+		while (libc::fgets(&buffer, (int)buffer.len, file)) {
 			String line = ((ZString)&buffer).str_view();
-			if (try value = memory_value(line, "MemTotal:"))
-			{
+			if (try value = memory_value(line, "MemTotal:")) {
 				total = value;
 				has_total = true;
 			}
-			if (try value = memory_value(line, "MemAvailable:"))
-			{
+			if (try value = memory_value(line, "MemAvailable:")) {
 				available = value;
 				has_available = true;
 			}

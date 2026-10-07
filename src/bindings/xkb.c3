@@ -1,6 +1,5 @@
 module bar::xkb;
-struct State
-{
+struct State {
 	char group;
 	char locked_group;
 	ushort base_group;
@@ -16,8 +15,7 @@ struct State
 	char compat_lookup_mods;
 	ushort ptr_buttons;
 }
-struct Names
-{
+struct Names {
 	ulong keycodes;
 	ulong geometry;
 	ulong symbols;
@@ -34,8 +32,7 @@ struct Names
 	char num_key_aliases;
 	ushort num_rg;
 }
-struct Keyboard
-{
+struct Keyboard {
 	void* display;
 	ushort flags;
 	ushort device_spec;

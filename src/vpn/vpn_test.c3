@@ -24,8 +24,7 @@ import libc;
 // document equivalent-mutant exclusions, and strengthen tests for real survivors.
 // Add a just command and a bounded CI job with an agreed mutation-score gate.
 
-fn void private_bus_scenario() @test
-{
+fn void private_bus_scenario() @test {
 	ZString expected = libc::getenv("MY_BAR_VPN_EXPECT");
 	if (!expected) return;
 	ZString color = libc::getenv("MY_BAR_VPN_COLOR");
@@ -35,28 +34,19 @@ fn void private_bus_scenario() @test
 	assert(iterations > 0);
 	Context ctx;
 	defer close(&ctx);
-	for (int i; i < iterations; i++)
-	{
-		@pool()
-		{
-			if (i % 5 == 0)
-			{
+	for (int i; i < iterations; i++) {
+		@pool() {
+			if (i % 5 == 0) {
 				close(&ctx);
 				close(&ctx);
 			}
-			if (expected.str_view() == "VPN: unavailable")
-			{
-				if (catch err = block(&ctx))
-				{
+			if (expected.str_view() == "VPN: unavailable") {
+				if (catch err = block(&ctx)) {
 					assert(err == errors::UNAVAILABLE);
-				}
-				else
-				{
+				} else {
 					assert(false);
 				}
-			}
-			else
-			{
+			} else {
 				Block value = block(&ctx)!!;
 				assert(value.text == expected.str_view());
 				assert(value.color == color.str_view());

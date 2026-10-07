@@ -4,16 +4,13 @@ import std::io;
 import std::core::mem;
 import libc;
 
-struct Bus
-{
+struct Bus {
 	char unused;
 }
-struct Message
-{
+struct Message {
 	char unused;
 }
-struct Slot
-{
+struct Slot {
 	char unused;
 }
 alias Callback = fn CInt(Message*, void*, void*);
@@ -35,8 +32,7 @@ extern fn CInt sd_bus_message_append(Message* message, ZString signature, ...);
 extern fn CInt sd_bus_send(Bus* bus, Message* message, ulong* cookie);
 extern fn CInt sd_bus_reply_method_errorf(Message* call, ZString name, ZString format, ...);
 
-struct Fixture
-{
+struct Fixture {
 	ZString path;
 	ZString name;
 	ZString kind;
@@ -54,24 +50,19 @@ char mode;
 CInt stopping;
 char[8192] long_name;
 
-fn void stop(CInt signal)
-{
+fn void stop(CInt signal) {
 	mem::@volatile_store(stopping, 1);
 }
 
-fn CInt reply_property(Message* message, Message* reply, String property)
-{
-	if (property == "ActiveConnections")
-	{
+fn CInt reply_property(Message* message, Message* reply, String property) {
+	if (property == "ActiveConnections") {
 		if (sd_bus_message_open_container(
 			reply,
 			'v',
 			"ao"
 		) < 0 || sd_bus_message_open_container(reply, 'a', "o") < 0) return -1;
-		if (mode != '1')
-		{
-			foreach (fixture : fixtures)
-			{
+		if (mode != '1') {
+			foreach (fixture : fixtures) {
 				if (sd_bus_message_append(reply, "o", fixture.path) < 0) return -1;
 				if (mode == '3') break;
 			}
@@ -80,11 +71,9 @@ fn CInt reply_property(Message* message, Message* reply, String property)
 		return sd_bus_message_close_container(reply);
 	}
 	String path = sd_bus_message_get_path(message).str_view();
-	foreach (fixture : fixtures)
-	{
+	foreach (fixture : fixtures) {
 		if (path != fixture.path.str_view()) continue;
-		switch (property)
-		{
+		switch (property) {
 			case "Type": return sd_bus_message_append(reply, "v", (ZString)"s", fixture.kind);
 			case "State": return sd_bus_message_append(reply, "v", (ZString)"u", fixture.state);
 			case "Id":
@@ -95,13 +84,11 @@ fn CInt reply_property(Message* message, Message* reply, String property)
 	return -2;
 }
 
-fn CInt property_call(Message* message, void* userdata, void* error)
-{
+fn CInt property_call(Message* message, void* userdata, void* error) {
 	if (sd_bus_message_is_method_call(message, "org.freedesktop.DBus.Properties", "Get") <= 0) return 0;
 	ZString interface_name, property;
 	if (sd_bus_message_read(message, "ss", &interface_name, &property) < 0) return -1;
-	if (mode == '2' && property.str_view() != "ActiveConnections")
-	{
+	if (mode == '2' && property.str_view() != "ActiveConnections") {
 		return sd_bus_reply_method_errorf(
 			message,
 			"org.freedesktop.DBus.Error.UnknownProperty",
@@ -117,8 +104,7 @@ fn CInt property_call(Message* message, void* userdata, void* error)
 	return sd_bus_send(null, reply, null);
 }
 
-fn int main(String[] args)
-{
+fn int main(String[] args) {
 	if (args.len != 2 || args[1].len != 1 || args[1][0] < '0' || args[1][0] > '4') return 2;
 	mode = args[1][0];
 	for (usz i = 0; i < long_name.len - 1; i++) long_name[i] = 'x';
@@ -139,12 +125,10 @@ fn int main(String[] args)
 	defer sd_bus_slot_unref(slot);
 	if (sd_bus_request_name(bus, "org.freedesktop.NetworkManager", 0) < 0) return 1;
 	io::printn("ready");
-	while (mem::@volatile_load(stopping) == 0)
-	{
+	while (mem::@volatile_load(stopping) == 0) {
 		CInt result = sd_bus_process(bus, null);
 		if (result < 0 && result != -4) return 1;
-		if (result <= 0)
-		{
+		if (result <= 0) {
 			CInt waited = sd_bus_wait(bus, 100000);
 			if (waited < 0 && waited != -4) return 1;
 		}
