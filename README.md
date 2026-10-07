@@ -22,6 +22,7 @@ On Arch the development headers ship with `libx11`,
 
 ```sh
 just build                  # build/my-bar
+just clean                  # remove generated build files
 just check                  # formatting, lint, both analyzers, tests, sanitizers
 just format                 # automatically format all C sources and headers
 just run                    # stream i3bar JSON

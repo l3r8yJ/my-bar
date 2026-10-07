@@ -3,6 +3,9 @@ packages := "x11 libnm json-c"
 
 default: check
 
+clean:
+    rm -rf -- build
+
 build:
     mkdir -p build
     cc {{flags}} -O2 $(pkg-config --cflags {{packages}}) src/*.c -o build/my-bar $(pkg-config --libs {{packages}})
