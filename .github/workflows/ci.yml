@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   check:
+    env:
+      MY_BAR_TOOLS: ${{ github.workspace }}/.tools
     name: ${{ matrix.task }}
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -31,6 +33,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Install pinned D tools
+        run: sh scripts/ci-install-tools.sh .tools
       - name: Record toolchain versions
         run: |
           cc --version

@@ -1,16 +1,17 @@
 #!/bin/sh
 set -eu
-tools=$1
-compiler="$tools/ldc/bin/ldc2"
+compiler=$1
+formatter=$2
+scanner=$3
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 printf 'module probe;extern(C) int main(){return 0;}\n' > "$work/probe.d"
-if sh scripts/check-format.sh "$tools/dfmt" "$work" > "$work/output" 2>&1; then
+if sh scripts/check-format.sh "$formatter" "$work" > "$work/output" 2>&1; then
     echo 'FAIL: formatter accepted unformatted source.' >&2
     exit 1
 fi
-"$tools/dfmt" --inplace "$work/probe.d"
-sh scripts/check-format.sh "$tools/dfmt" "$work"
+"$formatter" --inplace "$work/probe.d"
+sh scripts/check-format.sh "$formatter" "$work"
 printf 'module probe; int[] allocate() @nogc nothrow { return new int[1]; }\n' > "$work/probe.d"
 if "$compiler" -w -de -c "$work/probe.d" -of="$work/probe.o" > "$work/output" 2>&1; then
     echo 'FAIL: compiler accepted GC allocation in @nogc function.' >&2
@@ -48,14 +49,14 @@ if "$compiler" -betterC -w -de -c "$work/probe.d" -of="$work/probe.o" > "$work/o
 fi
 grep -q 'deprecated' "$work/output"
 printf 'module probe; void run() { goto finish; finish: return; }\n' > "$work/probe.d"
-if sh scripts/check-policy.sh "$tools/dscanner" "$work" > "$work/output" 2>&1; then
+if sh scripts/check-policy.sh "$scanner" "$work" > "$work/output" 2>&1; then
     echo 'FAIL: syntax-tree policy accepted goto.' >&2
     exit 1
 fi
 printf 'module probe; enum text = "<gotoStatement goto"; // goto\n' > "$work/probe.d"
-sh scripts/check-policy.sh "$tools/dscanner" "$work"
+sh scripts/check-policy.sh "$scanner" "$work"
 printf 'module probe; int produce() { return 1; } void run() { produce(); }\n' > "$work/probe.d"
-if "$tools/dscanner" --styleCheck --config=dscanner.ini "$work/probe.d" > "$work/output" 2>&1; then
+if "$scanner" --styleCheck --config=dscanner.ini "$work/probe.d" > "$work/output" 2>&1; then
     echo 'FAIL: analyzer accepted a discarded result.' >&2
     exit 1
 fi
