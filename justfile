@@ -8,7 +8,7 @@ clean:
 
 build:
     mkdir -p build
-    cc {{flags}} -O2 $(pkg-config --cflags {{packages}}) src/*.c -o build/my-bar $(pkg-config --libs {{packages}})
+    cc {{flags}} -O2 ${CFLAGS:-} $(pkg-config --cflags {{packages}}) src/*.c -o build/my-bar ${LDFLAGS:-} $(pkg-config --libs {{packages}})
 
 test: build
     cc {{flags}} -O2 $(pkg-config --cflags x11 json-c) tests/keyboard.c src/keyboard.c -o build/test-keyboard $(pkg-config --libs json-c)
@@ -51,3 +51,12 @@ run: build
 
 install: check
     install -Dm755 build/my-bar "$HOME/.local/bin/my-bar"
+
+[positional-arguments]
+package version: build
+    sh scripts/package.sh "$1"
+
+release-check:
+    shellcheck -x scripts/*.sh tests/release.sh tests/publish.sh
+    sh tests/release.sh
+    sh tests/publish.sh
